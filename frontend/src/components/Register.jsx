@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { register, checkPasswordStrength } from '../services/authService';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
-import ReCAPTCHA from 'react-google-recaptcha';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -12,6 +11,7 @@ const Register = () => {
     phoneNumber: '',
     password: '',
     confirmPassword: '',
+    isAdmin: false,
   });
 
   const [errors, setErrors] = useState({});
@@ -53,10 +53,6 @@ const Register = () => {
       newErrors.password = 'Password cannot be the same as username';
     }
 
-    if (!captchaToken) {
-      newErrors.captcha = 'Please complete the CAPTCHA';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -67,7 +63,7 @@ const Register = () => {
 
     setLoading(true);
     try {
-      await register({ ...formData, captchaToken });
+      await register({ ...formData, isAdmin:formData.isAdmin });
       navigate('/login', {
         state: { message: 'Registration successful! Please login.' },
       });
@@ -79,10 +75,6 @@ const Register = () => {
     }
   };
 
-  const handleCaptchaChange = (token) => {
-    setCaptchaToken(token);
-    if (errors.captcha) setErrors((prev) => ({ ...prev, captcha: '' }));
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-6 py-12">
@@ -132,11 +124,19 @@ const Register = () => {
           ))}
 
           <div>
-            <ReCAPTCHA
-              sitekey="YOUR_SITE_KEY" // Replace with your Google reCAPTCHA site key
-              onChange={handleCaptchaChange}
-            />
-            {errors.captcha && <p className="text-sm text-red-600 mt-1">{errors.captcha}</p>}
+            <label htmlFor="isAdmin" className="block text-sm font-medium text-gray-700 mb-1">
+              Register as
+            </label>
+            <select
+              id="isAdmin"
+              name="isAdmin"
+              value={formData.isAdmin}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="false">User</option>
+              <option value="true">Admin</option>
+            </select>
           </div>
 
           <button

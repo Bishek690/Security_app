@@ -6,7 +6,7 @@ const { validateRegistrationInput } = require("../validations/userValidation");
 const jwt = require("jsonwebtoken");
 
 const registerUser = async (req, res) => {
-  const { username, email, phoneNumber, password, confirmPassword } = req.body;
+  const { username, email, phoneNumber, password, confirmPassword, isAdmin } = req.body;
 
   // Run validation
   const { isValid, errors, strength } = validateRegistrationInput({
@@ -15,6 +15,7 @@ const registerUser = async (req, res) => {
     phoneNumber,
     password,
     confirmPassword,
+    isAdmin,
   });
 
   // Enforce strong password requirement
@@ -47,13 +48,15 @@ const registerUser = async (req, res) => {
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-
+    // If isAdmin is not provided, default to false
+    const isAdminValue = isAdmin === undefined ? false : isAdmin;
     // Save user
     const newUser = userRepo.create({
       username,
       email,
       phoneNumber,
       password: hashedPassword,
+      isAdmin: isAdminValue,
     });
 
     await userRepo.save(newUser);
@@ -143,9 +146,9 @@ const getUserById = async (req, res) => {
 
 const updateUser = async (req, res) => {
   const userId = req.params.id;
-  const { username, email, phoneNumber } = req.body || {};
+  const { username, email, phoneNumber, isAdmin } = req.body || {};
 
-  if (!username && !email && !phoneNumber) {
+  if (!username && !email && !phoneNumber && isAdmin === undefined) {
     return res.status(400).json({ message: "No update data provided" });
   }
 
@@ -160,6 +163,7 @@ const updateUser = async (req, res) => {
     if (username) user.username = username;
     if (email) user.email = email;
     if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (isAdmin !== undefined) user.isAdmin = isAdmin;
     // If email is updated, check if it already exists
     if (email) {
       const existingUser = await userRepo.findOneBy({ email });

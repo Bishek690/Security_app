@@ -30,22 +30,19 @@ const PasswordStrengthIndicator = ({ password, fullName }) => {
   let strength = 'Weak';
   let colorClass = 'bg-red-500';
 
-  if (score === 12) {
+  if (score === 10) {
     strength = 'Very Strong';
     colorClass = 'bg-green-700';
-  } else if (score >= 9) {
+  } else if (score >= 8) {
     strength = 'Strong';
     colorClass = 'bg-green-500';
   } else if (score >= 6) {
     strength = 'Medium';
     colorClass = 'bg-yellow-500';
-  } else if (score >= 3) {
-    strength = 'Weak';
-    colorClass = 'bg-orange-500';
-  }
+  } 
 
   // Calculate progress width
-  const progressWidth = Math.max(12.5, (score / 8) * 100); // Adjusted for 8 criteria
+  const progressWidth = Math.max(12.5, (score / 8) * 100);
 
   return (
     <div className="mt-2 mb-4">
