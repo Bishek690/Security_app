@@ -4,11 +4,31 @@ const { User } = require("../entities/User");
 const nodemailer = require('nodemailer');
 const { validateRegistrationInput } = require("../validations/userValidation");
 const jwt = require("jsonwebtoken");
+const axios = 'axios';
 
+const verifyCaptcha = async (captchaToken) => {
+  const secretKey = process.env.RECAPTCHA_SECRET_KEY; // Replace with your secret key
+  const response = await axios.post(
+    `https://www.google.com/recaptcha/api/siteverify`,
+    null,
+    {
+      params: {
+        secret: secretKey,
+        response: captchaToken,
+      },
+    }
+  );
+  return response.data.success;
+};
 const registerUser = async (req, res) => {
-  const { username, email, phoneNumber, password, confirmPassword, isAdmin } = req.body;
+  const { username, email, phoneNumber, password,captchaToken, confirmPassword, isAdmin } = req.body;
 
   // Run validation
+  // Verify CAPTCHA
+    const isCaptchaValid = await verifyCaptcha(captchaToken);
+    if (!isCaptchaValid) {
+      return res.status(400).json({ message: 'Invalid CAPTCHA' });
+    }
   const { isValid, errors, strength } = validateRegistrationInput({
     username,
     email,

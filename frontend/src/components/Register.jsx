@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { register, checkPasswordStrength } from '../services/authService';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -20,8 +21,9 @@ const Register = () => {
   const [captchaToken, setCaptchaToken] = useState(null);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+    const newValue = type === 'select-one' && name === 'isAdmin' ? value === 'true' : value;
+    setFormData((prev) => ({ ...prev, [name]: newValue }));
 
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
     if (serverError) setServerError('');
@@ -53,6 +55,10 @@ const Register = () => {
       newErrors.password = 'Password cannot be the same as username';
     }
 
+    if (!captchaToken) {
+      newErrors.captcha = 'Please complete the CAPTCHA';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -63,7 +69,7 @@ const Register = () => {
 
     setLoading(true);
     try {
-      await register({ ...formData, isAdmin:formData.isAdmin });
+      await register({ ...formData, isAdmin: formData.isAdmin, captchaToken });
       navigate('/login', {
         state: { message: 'Registration successful! Please login.' },
       });
@@ -75,6 +81,10 @@ const Register = () => {
     }
   };
 
+  const handleCaptchaChange = (token) => {
+    setCaptchaToken(token);
+    if (errors.captcha) setErrors((prev) => ({ ...prev, captcha: '' }));
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-6 py-12">
@@ -108,9 +118,8 @@ const Register = () => {
                 value={formData[name]}
                 onChange={handleChange}
                 required
-                className={`w-full px-3 py-2 border ${
-                  errors[name] ? 'border-red-500' : 'border-gray-300'
-                } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                className={`w-full px-3 py-2 border ${errors[name] ? 'border-red-500' : 'border-gray-300'
+                  } rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 aria-invalid={!!errors[name]}
               />
               {errors[name] && <p className="text-sm text-red-600 mt-1">{errors[name]}</p>}
@@ -130,13 +139,21 @@ const Register = () => {
             <select
               id="isAdmin"
               name="isAdmin"
-              value={formData.isAdmin}
+              value={formData.isAdmin.toString()}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="false">User</option>
               <option value="true">Admin</option>
             </select>
+          </div>
+
+          <div>
+            <ReCAPTCHA
+              sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+              onChange={handleCaptchaChange}
+            />
+            {errors.captcha && <p className="text-sm text-red-600 mt-1">{errors.captcha}</p>}
           </div>
 
           <button
