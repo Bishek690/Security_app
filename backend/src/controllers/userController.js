@@ -4,10 +4,10 @@ const { User } = require("../entities/User");
 const nodemailer = require('nodemailer');
 const { validateRegistrationInput } = require("../validations/userValidation");
 const jwt = require("jsonwebtoken");
-const axios = 'axios';
+const axios = require('axios');
 
 const verifyCaptcha = async (captchaToken) => {
-  const secretKey = process.env.RECAPTCHA_SECRET_KEY; // Replace with your secret key
+  const secretKey = process.env.RECAPTCHA_SECRET_KEY;
   const response = await axios.post(
     `https://www.google.com/recaptcha/api/siteverify`,
     null,
@@ -20,15 +20,17 @@ const verifyCaptcha = async (captchaToken) => {
   );
   return response.data.success;
 };
+
 const registerUser = async (req, res) => {
-  const { username, email, phoneNumber, password,captchaToken, confirmPassword, isAdmin } = req.body;
+  const { username, email, phoneNumber, password, captchaToken, confirmPassword, isAdmin } = req.body;
+
+  // Verify CAPTCHA first
+  const isCaptchaValid = await verifyCaptcha(captchaToken);
+  if (!isCaptchaValid) {
+    return res.status(400).json({ message: 'Invalid CAPTCHA' });
+  }
 
   // Run validation
-  // Verify CAPTCHA
-    const isCaptchaValid = await verifyCaptcha(captchaToken);
-    if (!isCaptchaValid) {
-      return res.status(400).json({ message: 'Invalid CAPTCHA' });
-    }
   const { isValid, errors, strength } = validateRegistrationInput({
     username,
     email,
@@ -38,14 +40,6 @@ const registerUser = async (req, res) => {
     isAdmin,
   });
 
-  // Enforce strong password requirement
-  if (strength !== "Strong") {
-    return res.status(400).json({
-      message: "Password is not strong enough. Please improve your password.",
-      errors,
-      strength,
-    });
-  }
 
   if (!isValid) {
     return res.status(400).json({ message: "Validation failed", errors, strength });
@@ -68,28 +62,32 @@ const registerUser = async (req, res) => {
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    // If isAdmin is not provided, default to false
-    const isAdminValue = isAdmin === undefined ? false : isAdmin;
+    
+    // Convert boolean to enum value for database
+    let isAdmin = "user";
+    if (isAdmin === true || isAdmin === "true") {
+      isAdmin = "admin";
+    }
+
     // Save user
     const newUser = userRepo.create({
       username,
       email,
       phoneNumber,
       password: hashedPassword,
-      isAdmin: isAdminValue,
+      isAdmin: isAdmin,
     });
 
     await userRepo.save(newUser);
     res.status(201).json({ message: "User registered successfully", strength });
 
   } catch (error) {
-    console.error("Registration error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: "Internal server error", error });
   }
 };
 
 const loginUser = async (req, res) => {
-  const { identifier, password } = req.body; // 'identifier' can be either email or username
+  const { identifier, password } = req.body;
 
   try {
     const userRepo = AppDataSource.getRepository("User");
@@ -318,7 +316,7 @@ const resetPassword = async (req, res) => {
     // Compare new password with old hashed password
     const isSamePassword = await bcrypt.compare(newPassword, user.password);
     if (isSamePassword) {
-      return res.status(400).json({ message: "New password must be different from the old password" });
+      return res.status(400).json({ message: "New password cannot be the same as the old password" });
     }
     
 
