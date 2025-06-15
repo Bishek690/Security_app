@@ -40,6 +40,9 @@ export const login = async (credentials) => {
     if (response.data.token) {
       localStorage.setItem('token', response.data.token);
     }
+    if (response.data.user) {
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
     return response.data;
   } catch (error) {
     throw error.response?.data || { message: 'Network error occurred' };
@@ -49,12 +52,19 @@ export const login = async (credentials) => {
 // 🔐 Logout
 export const logout = () => {
   localStorage.removeItem('token');
+  localStorage.removeItem('user');
 };
 
 // 👤 Get current user
 export const getCurrentUser = () => {
-  return JSON.parse(localStorage.getItem('user'));
+  try {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  } catch {
+    return null;
+  }
 };
+
 
 // 🔑 Check password strength
 export const checkPasswordStrength = (password) => {

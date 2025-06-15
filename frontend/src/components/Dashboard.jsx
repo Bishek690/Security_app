@@ -36,11 +36,9 @@ const Dashboard = () => {
               <h1 className="text-xl font-bold text-gray-900">User Dashboard</h1>
             </div>
             <div className="flex items-center">
-              <span className="mr-4 text-gray-700">Welcome, {currentUser.username}</span>
               <button
                 onClick={handleLogout}
-                className="btn btn-primary"
-              >
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded" >
                 Logout
               </button>
             </div>

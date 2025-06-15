@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { login } from '../services/authService';
 import { useAuth } from '../context/AuthContext';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login: authLogin } = useAuth();
 
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ identifier: '', password: '' });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState('');
   const [notification, setNotification] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // toggle state
 
   useEffect(() => {
     if (location.state?.message) {
@@ -20,8 +22,7 @@ const Login = () => {
     }
   }, [location]);
 
-
-    const validateForm = () => {
+  const validateForm = () => {
     const newErrors = {};
     if (!formData.identifier.trim()) {
       newErrors.identifier = 'Email or username is required';
@@ -43,7 +44,6 @@ const Login = () => {
     if (serverError) setServerError('');
   };
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -52,7 +52,7 @@ const Login = () => {
     try {
       const userData = await login(formData);
       authLogin(userData);
-      navigate('/dashboard');
+      navigate('/');
     } catch (error) {
       console.error('Login error:', error);
       setServerError(error.message || 'Invalid credentials. Please try again.');
@@ -83,7 +83,7 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
               Email or Username
             </label>
             <input
@@ -96,22 +96,31 @@ const Login = () => {
               onChange={handleChange}
               className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
-            {errors.identifier && <p className="text-sm text-red-500 mt-1">{errors.email}</p>}
+            {errors.identifier && <p className="text-sm text-red-500 mt-1">{errors.identifier}</p>}
           </div>
 
-          <div>
+          <div className="relative">
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Password
             </label>
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               name="password"
               id="password"
               autoComplete="current-password"
+              placeholder="Enter your password"
               value={formData.password}
               onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="mt-1 w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3 top-[38px] text-gray-500 hover:text-gray-700 focus:outline-none"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
             {errors.password && <p className="text-sm text-red-500 mt-1">{errors.password}</p>}
           </div>
 
@@ -120,9 +129,9 @@ const Login = () => {
               <input type="checkbox" className="form-checkbox text-blue-500" />
               <span>Remember me</span>
             </label>
-            <a href="/forgot-password" className="text-blue-500 hover:underline">
+            <Link to="/forgot-password" className="text-blue-500 hover:underline">
               Forgot password?
-            </a>
+            </Link>
           </div>
 
           <button
