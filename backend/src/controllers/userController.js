@@ -1,10 +1,10 @@
 const bcrypt = require("bcryptjs");
 const { AppDataSource } = require("../config/data-source");
 const { User } = require("../entities/User");
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 const { validateRegistrationInput } = require("../validations/userValidation");
 const jwt = require("jsonwebtoken");
-const axios = require('axios');
+const axios = require("axios");
 
 const verifyCaptcha = async (captchaToken) => {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY;
@@ -22,12 +22,20 @@ const verifyCaptcha = async (captchaToken) => {
 };
 
 const registerUser = async (req, res) => {
-  const { username, email, phoneNumber, password, captchaToken, confirmPassword, isAdmin } = req.body;
+  const {
+    username,
+    email,
+    phoneNumber,
+    password,
+    captchaToken,
+    confirmPassword,
+    isAdmin,
+  } = req.body;
 
   // Verify CAPTCHA first
   const isCaptchaValid = await verifyCaptcha(captchaToken);
   if (!isCaptchaValid) {
-    return res.status(400).json({ message: 'Invalid CAPTCHA' });
+    return res.status(400).json({ message: "Invalid CAPTCHA" });
   }
 
   // Run validation
@@ -40,14 +48,16 @@ const registerUser = async (req, res) => {
     isAdmin,
   });
 
-
   if (!isValid) {
-    return res.status(400).json({ message: "Validation failed", errors, strength });
+    return res
+      .status(400)
+      .json({ message: "Validation failed", errors, strength });
   }
 
   try {
     const userRepo = AppDataSource.getRepository("User");
 
+    const normalizedEmail = email.trim().toLowerCase();
     // Check if email exists
     const existingUser = await userRepo.findOneBy({ email });
     if (existingUser) {
@@ -57,45 +67,82 @@ const registerUser = async (req, res) => {
     // Check if phone number exists
     const existingPhone = await userRepo.findOneBy({ phoneNumber });
     if (existingPhone) {
-      return res.status(409).json({ message: "Phone number already registered" });
+      return res
+        .status(409)
+        .json({ message: "Phone number already registered" });
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     // Convert boolean to enum value for database
-    let isAdmin = "user";
+    let userRole  = "user";
     if (isAdmin === true || isAdmin === "true") {
-      isAdmin = "admin";
+      userRole  = "admin";
     }
 
     // Save user
     const newUser = userRepo.create({
       username,
-      email,
+      email: normalizedEmail,
       phoneNumber,
       password: hashedPassword,
-      isAdmin: isAdmin,
+      isAdmin: userRole,
     });
 
     await userRepo.save(newUser);
-    res.status(201).json({ message: "User registered successfully", strength });
 
+    // Send welcome email
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: normalizedEmail,
+      subject: "Welcome to Our Platform",
+      html: `
+    <h3>Welcome, ${username}!</h3>
+    <p>Your registration was successful.</p>
+    <p>You can now log in at: <a href="process.env.APP_URL/login">process.env.APP_URL/login</a></p>
+    <p>We're excited to have you onboard!</p>`,};
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Email sending error:", error);
+      } else {
+        console.log("Registration email sent:", info.response);
+      }
+    });
+
+    res.status(201).json({ message: "User registered successfully", strength });
   } catch (error) {
     res.status(500).json({ message: "Internal server error", error });
   }
 };
 
 const loginUser = async (req, res) => {
-  const { identifier, password } = req.body;
+  const { identifier, password, captchaToken } = req.body;
+
+   // Verify CAPTCHA 
+  const isCaptchaValid = await verifyCaptcha(captchaToken);
+  if (!isCaptchaValid) {
+    return res.status(400).json({ message: 'Invalid CAPTCHA' });
+  }
 
   try {
     const userRepo = AppDataSource.getRepository("User");
 
     // Check if user exists by email or username
-    const user = await userRepo.findOne({
-      where: [{ email: identifier }, { username: identifier }],
-    });
+    const user = await userRepo
+      .createQueryBuilder("user")
+      .addSelect("user.password")
+      .where("user.email = :identifier OR user.username = :identifier", { identifier })
+      .getOne();
 
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
@@ -109,15 +156,21 @@ const loginUser = async (req, res) => {
 
     // Generate JWT token
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
+      expiresIn: process.env.JWT_EXPIRES,
     });
 
     // Exclude password from response
     const { password: _, ...safeUser } = user;
 
-    res.cookie("token", token, { httpOnly: true, secure: true, expires: new Date(Date.now() + 86400000) }); // 1 day expiration
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true,
+      expires: new Date(Date.now() + 86400000),
+    }); // 1 day expiration
 
-    res.status(200).json({ message: "Login successful", user: safeUser, token });
+    res
+      .status(200)
+      .json({ message: "Login successful", user: safeUser, token });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -127,7 +180,7 @@ const loginUser = async (req, res) => {
 const getUserData = async (req, res) => {
   try {
     const userRepo = AppDataSource.getRepository("User");
-    const userId = req.user.id; // Assuming you have middleware to set req.user
+    const userId = req.user.id;
 
     const user = await userRepo.findOneBy({ id: userId });
     if (!user) {
@@ -137,12 +190,14 @@ const getUserData = async (req, res) => {
     // Exclude password from response
     const { password: _, ...safeUser } = user;
 
-    res.status(200).json({ message: "User data retrieved successfully", user: safeUser });
+    res
+      .status(200)
+      .json({ message: "User data retrieved successfully", user: safeUser });
   } catch (error) {
     console.error("Get user data error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 const getUserById = async (req, res) => {
   const userId = req.params.id;
 
@@ -154,13 +209,14 @@ const getUserById = async (req, res) => {
     }
     // Exclude password from response
     const { password: _, ...safeUser } = user;
-    res.status(200).json({ message: "User data retrieved successfully", user: safeUser });
-  }
-  catch (error) {
+    res
+      .status(200)
+      .json({ message: "User data retrieved successfully", user: safeUser });
+  } catch (error) {
     console.error("Get user by ID error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
 const updateUser = async (req, res) => {
   const userId = req.params.id;
@@ -192,7 +248,9 @@ const updateUser = async (req, res) => {
 
     const updatedUser = await userRepo.save(user);
 
-    res.status(200).json({ message: "User updated successfully", user: updatedUser });
+    res
+      .status(200)
+      .json({ message: "User updated successfully", user: updatedUser });
   } catch (error) {
     console.error("Update user error:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -215,7 +273,7 @@ const deleteUser = async (req, res) => {
     console.error("Delete user error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
 const getAllUsers = async (req, res) => {
   try {
@@ -226,7 +284,7 @@ const getAllUsers = async (req, res) => {
     console.error("Get all users error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
@@ -286,7 +344,9 @@ const resetPassword = async (req, res) => {
   const { email, otp, newPassword } = req.body;
 
   if (!email || !otp || !newPassword) {
-    return res.status(400).json({ message: "Email, OTP, and new password are required" });
+    return res
+      .status(400)
+      .json({ message: "Email, OTP, and new password are required" });
   }
 
   try {
@@ -316,9 +376,12 @@ const resetPassword = async (req, res) => {
     // Compare new password with old hashed password
     const isSamePassword = await bcrypt.compare(newPassword, user.password);
     if (isSamePassword) {
-      return res.status(400).json({ message: "New password cannot be the same as the old password" });
+      return res
+        .status(400)
+        .json({
+          message: "New password cannot be the same as the old password",
+        });
     }
-    
 
     // Hash and update new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -335,6 +398,34 @@ const resetPassword = async (req, res) => {
   }
 };
 
+const changePassword = async (req, res) => {
+  const userId = req.user.id;
+  const { oldPassword, newPassword } = req.body;
+
+  try {
+    const userRepo = AppDataSource.getRepository("User");
+    const user = await userRepo.findOneBy({ id: userId });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Check old password
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) return res.status(400).json({ message: "Old password is incorrect" });
+
+    // Prevent using the same password
+    const isSame = await bcrypt.compare(newPassword, user.password);
+    if (isSame) return res.status(400).json({ message: "New password cannot be the same as the old password" });
+
+    // Hash and update new password
+    user.password = await bcrypt.hash(newPassword, 10);
+    await userRepo.save(user);
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 const logoutUser = async (req, res) => {
   try {
     res.clearCookie("token");
@@ -343,17 +434,18 @@ const logoutUser = async (req, res) => {
     console.error("Logout error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
-module.exports = { 
-    registerUser,
-    loginUser,
-    getUserData,
-    getUserById,
-    updateUser,
-    deleteUser,
-    getAllUsers,
-    forgotPassword,
-    resetPassword,
-    logoutUser
- };
+module.exports = {
+  registerUser,
+  loginUser,
+  getUserData,
+  getUserById,
+  updateUser,
+  deleteUser,
+  getAllUsers,
+  forgotPassword,
+  resetPassword,
+  changePassword,
+  logoutUser,
+};

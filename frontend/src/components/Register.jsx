@@ -28,6 +28,9 @@ const Register = () => {
     const { name, value, type } = e.target;
     let newValue = value;
 
+    if (name === 'email') {
+      newValue = value.toLowerCase();
+    }
     if (type === 'select-one' && name === 'isAdmin') {
       newValue = value === 'true';
     }

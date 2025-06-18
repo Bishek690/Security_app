@@ -3,11 +3,13 @@ import { resetPassword } from '../services/authService';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import PasswordStrengthIndicator from './PasswordStrengthIndicator';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const ResetPassword = () => {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -39,9 +41,9 @@ const ResetPassword = () => {
 
       // Show specific toast for known errors
       if (errorMessage === "New password must be different from the old password") {
-        toast.warn(errorMessage); // Show a warning for the specific error
+        toast.warn(errorMessage);
       } else {
-        toast.error(errorMessage); // Default error toast
+        toast.error(errorMessage);
       }
     } finally {
       setLoading(false);
@@ -59,7 +61,7 @@ const ResetPassword = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          disabled // Email should not be changed once OTP is sent
+          disabled
         />
 
         <label className="block mb-2 text-sm font-medium text-gray-700">OTP</label>
@@ -72,13 +74,23 @@ const ResetPassword = () => {
         />
 
         <label className="block mb-2 text-sm font-medium text-gray-700">New Password</label>
-        <input
-          type="password"
-          className="w-full p-2 border rounded mb-2"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          required
-        />
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            className="w-full p-2 border rounded mb-2 pr-10"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+          />
+          <button
+            type="button"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-600"
+            onClick={() => setShowPassword((prev) => !prev)}
+            tabIndex={-1}
+          >
+            {showPassword ? <FaEyeSlash /> : <FaEye />}
+          </button>
+        </div>
 
         {/* Password Strength Indicator */}
         <PasswordStrengthIndicator password={newPassword} fullName={email.split('@')[0]} />

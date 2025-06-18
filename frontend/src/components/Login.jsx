@@ -1,20 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { login } from '../services/authService';
-import { useAuth } from '../context/AuthContext';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { login } from "../services/authService";
+import { useAuth } from "../context/AuthContext";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import ReCAPTCHA from "react-google-recaptcha";
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login: authLogin } = useAuth();
 
-  const [formData, setFormData] = useState({ identifier: '', password: '' });
+  const [formData, setFormData] = useState({
+    identifier: "",
+    password: "",
+    rememberMe: false,
+  });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [serverError, setServerError] = useState('');
-  const [notification, setNotification] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // toggle state
+  const [serverError, setServerError] = useState("");
+  const [notification, setNotification] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
 
   useEffect(() => {
     if (location.state?.message) {
@@ -25,23 +31,36 @@ const Login = () => {
   const validateForm = () => {
     const newErrors = {};
     if (!formData.identifier.trim()) {
-      newErrors.identifier = 'Email or username is required';
+      newErrors.identifier = "Email or username is required";
     }
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     }
+    if (captchaToken === "") {
+      newErrors.captcha = "Please complete the reCAPTCHA";
+    }
+    if (!formData.rememberMe)
+      newErrors.rememberMe = "You must agree to be remembered.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    const { name, value, type, checked } = e.target;
+    const updatedValue = type === "checkbox" ? checked : value;
+    setFormData({ ...formData, [name]: updatedValue });
 
     if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-    if (serverError) setServerError('');
+    if (serverError) setServerError("");
+  };
+
+  const handleCaptcha = (token) => {
+    setCaptchaToken(token);
+    if (token && errors.captcha) {
+      setErrors((prev) => ({ ...prev, captcha: "" }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -50,12 +69,12 @@ const Login = () => {
 
     setLoading(true);
     try {
-      const userData = await login(formData);
+      const userData = await login({ formData, captchaToken });
       authLogin(userData);
-      navigate('/');
+      navigate("/");
     } catch (error) {
-      console.error('Login error:', error);
-      setServerError(error.message || 'Invalid credentials. Please try again.');
+      console.error("Login error:", error);
+      setServerError(error.message || "Invalid credentials. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -66,7 +85,9 @@ const Login = () => {
       <div className="w-full max-w-md bg-white shadow-xl rounded-2xl p-8">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Welcome Back 👋</h1>
-          <p className="text-sm text-gray-500">Sign in to access your dashboard</p>
+          <p className="text-sm text-gray-500">
+            Sign in to access your dashboard
+          </p>
         </div>
 
         {notification && (
@@ -83,8 +104,11 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label htmlFor="identifier" className="block text-sm font-medium text-gray-700">
-              Email or Username
+            <label
+              htmlFor="identifier"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Email/Username
             </label>
             <input
               type="text"
@@ -96,15 +120,20 @@ const Login = () => {
               onChange={handleChange}
               className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
-            {errors.identifier && <p className="text-sm text-red-500 mt-1">{errors.identifier}</p>}
+            {errors.identifier && (
+              <p className="text-sm text-red-500 mt-1">{errors.identifier}</p>
+            )}
           </div>
 
           <div className="relative">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
               Password
             </label>
             <input
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               name="password"
               id="password"
               autoComplete="current-password"
@@ -121,15 +150,42 @@ const Login = () => {
             >
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </button>
-            {errors.password && <p className="text-sm text-red-500 mt-1">{errors.password}</p>}
+            {errors.password && (
+              <p className="text-sm text-red-500 mt-1">{errors.password}</p>
+            )}
+          </div>
+
+          <div>
+            <ReCAPTCHA
+              sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+              onChange={handleCaptcha}
+              theme="light"
+            />
+            {errors.captcha && (
+              <p className="text-sm text-red-500 mt-2">{errors.captcha}</p>
+            )}
           </div>
 
           <div className="flex items-center justify-between text-sm text-gray-600">
-            <label className="flex items-center space-x-2">
-              <input type="checkbox" className="form-checkbox text-blue-500" />
-              <span>Remember me</span>
-            </label>
-            <Link to="/forgot-password" className="text-blue-500 hover:underline">
+            <div>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  name="rememberMe"
+                  checked={formData.rememberMe}
+                  onChange={handleChange}
+                  className="form-checkbox text-blue-500"
+                />
+                <span>Remember me</span>
+              </label>
+              {errors.rememberMe && (
+                <p className="text-sm text-red-500 mt-1">{errors.rememberMe}</p>
+              )}
+            </div>
+            <Link
+              to="/forgot-password"
+              className="text-blue-500 hover:underline"
+            >
               Forgot password?
             </Link>
           </div>
@@ -138,16 +194,19 @@ const Login = () => {
             type="submit"
             disabled={loading}
             className={`w-full py-2 px-4 text-white font-semibold bg-blue-600 hover:bg-blue-700 rounded-lg transition duration-200 ${
-              loading ? 'opacity-60 cursor-not-allowed' : ''
+              loading ? "opacity-60 cursor-not-allowed" : ""
             }`}
           >
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-600 mt-6">
-          Don’t have an account?{' '}
-          <Link to="/register" className="text-blue-600 hover:underline font-medium">
+          Don’t have an account?{" "}
+          <Link
+            to="/register"
+            className="text-blue-600 hover:underline font-medium"
+          >
             Sign up
           </Link>
         </p>

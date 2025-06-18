@@ -7,29 +7,28 @@ const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT;
+const URL = process.env.APP_URL;
 
-// Define frontend origin
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
 
-// Configure CORS before defining routes
 app.use(cors({
   origin: FRONTEND_ORIGIN,
   credentials: true
 }));
 
-// Parse JSON request bodies
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Define API routes
+
 app.use("/api/", userRoutes);
 
-// Initialize database connection
+// Initialize server
 AppDataSource.initialize()
   .then(() => {
     console.log("Database Connected Successfully");
     app.listen(PORT, () => {
-      console.log(`Server running on port http://localhost:${PORT}`);
+      console.log(`Server running on port ${URL}:${PORT}`);
       console.log(`CORS enabled for origin: ${FRONTEND_ORIGIN}`);
     });
   })
