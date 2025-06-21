@@ -13,7 +13,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="flex items-center justify-between p-4 bg-gray-800 text-white">
+    <nav className="flex items-center justify-between p-4 px-14 bg-gray-800 text-white">
       <div className="flex items-center space-x-4">
         <Link to="/">
           <img src="/logo.png" alt="Logo" className="h-8" />
@@ -32,7 +32,13 @@ const Navbar = () => {
           </Link>
         </div>
       ) : (
-        <div>
+        <div className='flex gap-4'>
+            <button
+                onClick={() => navigate('/login')}
+                className="bg-blue-600 text-white px-5 py-2 rounded-md shadow-md hover:bg-blue-700 transition duration-300"
+            >
+                Register
+            </button>
             <button
                 onClick={() => navigate('/login')}
                 className="bg-blue-600 text-white px-5 py-2 rounded-md shadow-md hover:bg-blue-700 transition duration-300"

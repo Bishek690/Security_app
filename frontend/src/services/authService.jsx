@@ -119,3 +119,40 @@ export const resetPassword = async ({ email, otp, newPassword }) => {
     throw error.response?.data || { message: 'Error resetting password' };
   }
 };
+
+// ✏️ Update Profile
+export const updateProfile = async (userId, updateData) => {
+  try {
+    const response = await api.patch(`/user/${userId}`, updateData);
+    if (response.data.user) {
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Error updating profile' };
+  }
+};
+
+// Send OTP for change password
+export const sendChangePasswordOtp = async (userId) => {
+  try {
+    const response = await api.post(`/user/${userId}/send-change-password-otp`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Error sending OTP' };
+  }
+};
+
+// Change password with OTP
+export const changePassword = async (userId, { currentPassword, newPassword, otp }) => {
+  try {
+    const response = await api.post(`/user/${userId}/change-password`, {
+      currentPassword,
+      newPassword,
+      otp,
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Error changing password' };
+  }
+};

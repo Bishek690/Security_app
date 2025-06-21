@@ -13,7 +13,6 @@ const Login = () => {
   const [formData, setFormData] = useState({
     identifier: "",
     password: "",
-    rememberMe: false,
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -39,20 +38,18 @@ const Login = () => {
     if (captchaToken === "") {
       newErrors.captcha = "Please complete the reCAPTCHA";
     }
-    if (!formData.rememberMe)
-      newErrors.rememberMe = "You must agree to be remembered.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    const updatedValue = type === "checkbox" ? checked : value;
-    setFormData({ ...formData, [name]: updatedValue });
+    const { name, value } = e.target;
+    setFormData((prevData) => ({ ...prevData, [name]: value }));
 
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+
     if (serverError) setServerError("");
   };
 
@@ -69,9 +66,14 @@ const Login = () => {
 
     setLoading(true);
     try {
-      const userData = await login({ formData, captchaToken });
+      const userData = await login({ ...formData, captchaToken });
       authLogin(userData);
-      navigate("/");
+
+      if (userData?.user.isAdmin == 'admin') {
+        navigate("/admin/dashboard");
+      } else {
+        navigate("/");
+      }
     } catch (error) {
       console.error("Login error:", error);
       setServerError(error.message || "Invalid credentials. Please try again.");
@@ -118,7 +120,7 @@ const Login = () => {
               autoComplete="username"
               value={formData.identifier}
               onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="mt-1 w-full px-4 py-2 border border-gray-400 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
             {errors.identifier && (
               <p className="text-sm text-red-500 mt-1">{errors.identifier}</p>
@@ -140,7 +142,7 @@ const Login = () => {
               placeholder="Enter your password"
               value={formData.password}
               onChange={handleChange}
-              className="mt-1 w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="mt-1 w-full px-4 py-2 pr-10 border border-gray-400 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
             <button
               type="button"
@@ -166,22 +168,7 @@ const Login = () => {
             )}
           </div>
 
-          <div className="flex items-center justify-between text-sm text-gray-600">
-            <div>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  name="rememberMe"
-                  checked={formData.rememberMe}
-                  onChange={handleChange}
-                  className="form-checkbox text-blue-500"
-                />
-                <span>Remember me</span>
-              </label>
-              {errors.rememberMe && (
-                <p className="text-sm text-red-500 mt-1">{errors.rememberMe}</p>
-              )}
-            </div>
+          <div className="flex justify-end text-sm text-gray-600">
             <Link
               to="/forgot-password"
               className="text-blue-500 hover:underline"

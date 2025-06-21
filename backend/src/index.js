@@ -1,5 +1,6 @@
 require("reflect-metadata");
 const express = require("express");
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const { AppDataSource } = require("./config/data-source");
 const userRoutes = require("./routes/userRoutes");
@@ -16,7 +17,7 @@ app.use(cors({
   credentials: true
 }));
 
-
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

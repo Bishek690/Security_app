@@ -34,7 +34,7 @@ const ForgotPassword = () => {
         <label className="block mb-2 text-sm font-medium text-gray-700">Email</label>
         <input
           type="email"
-          className="w-full p-2 border rounded mb-4"
+          className="w-full p-2 border boarder-gray-400 rounded mb-4"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required

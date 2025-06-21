@@ -128,7 +128,7 @@ const Register = () => {
         onChange={handleChange}
         placeholder={placeholder}
         required
-        className={`w-full px-3 py-2 pr-10 border ${errors[name] ? 'border-red-500' : 'border-gray-300'} rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200`}
+        className={`w-full px-3 py-2 pr-10 border ${errors[name] ? 'border-red-500' : 'border-gray-400'} rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200`}
       />
       {showToggle && (
         <button
@@ -169,7 +169,7 @@ const Register = () => {
           {renderInput('Password', 'password', 'password', 'Create a strong password', true, () => setShowPassword(!showPassword), showPassword)}
           {renderInput('Confirm Password', 'confirmPassword', 'password', 'Confirm your password', true, () => setShowConfirmPassword(!showConfirmPassword), showConfirmPassword)}
 
-          <div>
+          {/* <div>
             <label htmlFor="isAdmin" className="block text-sm font-medium text-gray-700 mb-1">
               Role
             </label>
@@ -183,7 +183,7 @@ const Register = () => {
               <option value="false">User</option>
               <option value="true">Admin</option>
             </select>
-          </div>
+          </div> */}
 
           <div>
             <ReCAPTCHA
@@ -214,7 +214,7 @@ const Register = () => {
           </button>
         </form>
 
-        <div className="text-center pt-4 border-t border-gray-200">
+        <div className="text-center pt-2 border-t border-gray-200">
           <p className="text-sm text-gray-600">
             Already have an account?{' '}
             <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium hover:underline transition duration-200">

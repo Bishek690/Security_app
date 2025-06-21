@@ -106,10 +106,10 @@ const registerUser = async (req, res) => {
       to: normalizedEmail,
       subject: "Welcome to Our Platform",
       html: `
-    <h3>Welcome, ${username}!</h3>
-    <p>Your registration was successful.</p>
-    <p>You can now log in at: <a href="process.env.APP_URL/login">process.env.APP_URL/login</a></p>
-    <p>We're excited to have you onboard!</p>`,};
+        <h3>Welcome, ${username}!</h3>
+        <p>Your registration was successful.</p>
+        <p>You can now log in at: <a href="${process.env.APP_URL}/login">process.env.APP_URL/login</a></p>
+        <p>We're excited to have you onboard!</p>`,};
 
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
@@ -128,7 +128,6 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
   const { identifier, password, captchaToken } = req.body;
 
-   // Verify CAPTCHA 
   const isCaptchaValid = await verifyCaptcha(captchaToken);
   if (!isCaptchaValid) {
     return res.status(400).json({ message: 'Invalid CAPTCHA' });
@@ -137,45 +136,40 @@ const loginUser = async (req, res) => {
   try {
     const userRepo = AppDataSource.getRepository("User");
 
-    // Check if user exists by email or username
     const user = await userRepo
       .createQueryBuilder("user")
-      .addSelect("user.password")
       .where("user.email = :identifier OR user.username = :identifier", { identifier })
       .getOne();
 
-    if (!user) {
+    if (!user || !user.password) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // Generate JWT token
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRES,
     });
 
-    // Exclude password from response
     const { password: _, ...safeUser } = user;
 
     res.cookie("token", token, {
       httpOnly: true,
       secure: true,
       expires: new Date(Date.now() + 86400000),
-    }); // 1 day expiration
+    });
 
-    res
-      .status(200)
-      .json({ message: "Login successful", user: safeUser, token });
+    res.status(200).json({ message: "Login successful", user: safeUser, token });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 const getUserData = async (req, res) => {
   try {
@@ -234,28 +228,31 @@ const updateUser = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (username) user.username = username;
-    if (email) user.email = email;
-    if (phoneNumber) user.phoneNumber = phoneNumber;
-    if (isAdmin !== undefined) user.isAdmin = isAdmin;
-    // If email is updated, check if it already exists
-    if (email) {
+    // Email conflict check first
+    if (email && email !== user.email) {
       const existingUser = await userRepo.findOneBy({ email });
       if (existingUser && existingUser.id !== userId) {
         return res.status(400).json({ message: "Email already exists" });
       }
+      user.email = email;
     }
+
+    if (username) user.username = username;
+    if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (isAdmin !== undefined) user.isAdmin = isAdmin;
 
     const updatedUser = await userRepo.save(user);
 
-    res
-      .status(200)
-      .json({ message: "User updated successfully", user: updatedUser });
+    res.status(200).json({
+      message: "User updated successfully",
+      user: updatedUser,
+    });
   } catch (error) {
     console.error("Update user error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 const deleteUser = async (req, res) => {
   const userId = req.params.id;
@@ -398,26 +395,99 @@ const resetPassword = async (req, res) => {
   }
 };
 
-const changePassword = async (req, res) => {
-  const userId = req.user.id;
-  const { oldPassword, newPassword } = req.body;
 
+const sendChangePasswordOtp = async (req, res) => {
+  const userId = req.params.id;
   try {
     const userRepo = AppDataSource.getRepository("User");
+    const otpRepo = AppDataSource.getRepository("OTP");
     const user = await userRepo.findOneBy({ id: userId });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    // Check old password
-    const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Old password is incorrect" });
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Prevent using the same password
-    const isSame = await bcrypt.compare(newPassword, user.password);
-    if (isSame) return res.status(400).json({ message: "New password cannot be the same as the old password" });
+    // Save OTP
+    const otpRecord = otpRepo.create({
+      otp,
+      otpExpires: expiresAt,
+      user: user,
+    });
+    await otpRepo.save(otpRecord);
+
+    // Send OTP via email
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const mailOptions = {
+      to: user.email,
+      subject: "Change Password OTP",
+      text: `Your OTP for changing password is: ${otp}`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Email send error:", error);
+        return res.status(500).json({ message: "Failed to send OTP" });
+      }
+      res.json({ message: "OTP sent successfully" });
+    });
+  } catch (err) {
+    console.error("Send change password OTP error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const changePassword = async (req, res) => {
+  const userId = req.params.id;
+  const { currentPassword, newPassword, otp } = req.body;
+
+  try {
+    if (!currentPassword || !newPassword || !otp) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const userRepo = AppDataSource.getRepository("User");
+    const otpRepo = AppDataSource.getRepository("OTP");
+    const user = await userRepo.findOneBy({ id: userId });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // OTP verification
+    const otpRecord = await otpRepo.findOne({
+      where: { user: { id: user.id }, otp },
+      order: { createdAt: "DESC" },
+      relations: ["user"],
+    });
+
+    if (!otpRecord) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+    if (new Date() > new Date(otpRecord.otpExpires)) {
+      return res.status(400).json({ message: "OTP has expired" });
+    }
+
+    // Password verification
+    const isSamePassword = await bcrypt.compare(currentPassword, user.password);
+    if (!isSamePassword) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
 
     // Hash and update new password
-    user.password = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
     await userRepo.save(user);
+
+    // Optionally delete the OTP
+    await otpRepo.remove(otpRecord);
 
     res.status(200).json({ message: "Password changed successfully" });
   } catch (error) {
@@ -446,6 +516,7 @@ module.exports = {
   getAllUsers,
   forgotPassword,
   resetPassword,
+  sendChangePasswordOtp,
   changePassword,
   logoutUser,
 };

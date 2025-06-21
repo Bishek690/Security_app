@@ -9,7 +9,10 @@ import Home from './components/Home';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import PrivateRoute from './components/PrivateRoute';
+import EditProfile from './components/EditProfile';
+import ChangePassword from './components/ChangePassword';
 import Layout from './components/Layout';
+import AdminDashboard from './admin/AdminDashboard';
 
 function App() {
   return (
@@ -31,6 +34,23 @@ function App() {
                 <Dashboard />
               </PrivateRoute>
             } />
+            <Route path="/edit-profile" element={
+              <PrivateRoute>
+                <EditProfile />
+              </PrivateRoute>
+            } />
+            <Route path="/change-password" element={
+              <PrivateRoute>
+                <ChangePassword />
+              </PrivateRoute>
+            } />
+            {/* Admin routes */}
+            <Route path="/admin" element={
+              <PrivateRoute>
+                <AdminDashboard />
+              </PrivateRoute>
+            } />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/" element={<Navigate to="/login" replace />} />
           </Route>
         </Routes>
