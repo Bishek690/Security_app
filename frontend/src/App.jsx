@@ -9,10 +9,19 @@ import Home from './components/Home';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import PrivateRoute from './components/PrivateRoute';
+import UserRoute from './components/UserRoute';
 import EditProfile from './components/EditProfile';
 import ChangePassword from './components/ChangePassword';
+import AccessDenied from './components/AccessDenied';
 import Layout from './components/Layout';
+
+// Admin imports
+import AdminRoute from './admin/routes/AdminRoute';
+import AdminLayout from './admin/layout/AdminLayout';
 import AdminDashboard from './admin/AdminDashboard';
+import UserManagement from './admin/pages/UserManagement';
+import AdminProfile from './admin/pages/AdminProfile';
+import AdminSettings from './admin/pages/AdminSettings';
 
 function App() {
   return (
@@ -24,35 +33,44 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/access-denied" element={<AccessDenied />} />
           
 
-          {/* All other routes under layout with navbar */}
+          {/* User routes under layout with navbar */}
           <Route element={<Layout />}>
             <Route path="/" element={<Home />} />
             <Route path="/dashboard" element={
-              <PrivateRoute>
+              <UserRoute>
                 <Dashboard />
-              </PrivateRoute>
+              </UserRoute>
             } />
             <Route path="/edit-profile" element={
-              <PrivateRoute>
+              <UserRoute>
                 <EditProfile />
-              </PrivateRoute>
+              </UserRoute>
             } />
             <Route path="/change-password" element={
-              <PrivateRoute>
+              <UserRoute>
                 <ChangePassword />
-              </PrivateRoute>
+              </UserRoute>
             } />
-            {/* Admin routes */}
-            <Route path="/admin" element={
-              <PrivateRoute>
-                <AdminDashboard />
-              </PrivateRoute>
-            } />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/" element={<Navigate to="/login" replace />} />
           </Route>
+
+          {/* Admin routes with separate admin layout */}
+          <Route element={
+            <AdminRoute>
+              <AdminLayout />
+            </AdminRoute>
+          }>
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/users" element={<UserManagement />} />
+            <Route path="/admin/profile" element={<AdminProfile />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
+          </Route>
+
+          {/* Default redirect */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
     </AuthProvider>

@@ -30,11 +30,45 @@ export function AuthProvider({ children }) {
     setCurrentUser(null);
   };
 
+  // Check if user is admin
+  const isAdmin = () => {
+    if (!currentUser) return false;
+    return (
+      currentUser.isAdmin === true ||
+      currentUser.isAdmin === 'admin' ||
+      currentUser.role === 'admin' ||
+      currentUser.role === 'Administrator'
+    );
+  };
+
+  // Check if user is a regular user (not an admin)
+  const isRegularUser = () => {
+    if (!currentUser) return false;
+    return (
+      currentUser.isAdmin === false ||
+      currentUser.isAdmin === 'user' ||
+      currentUser.role === 'user' ||
+      (currentUser.isAdmin !== true &&
+       currentUser.isAdmin !== 'admin' &&
+       currentUser.role !== 'admin' &&
+       currentUser.role !== 'Administrator')
+    );
+  };
+
+  // Get user's home page route
+  const getUserHomeRoute = () => {
+    if (!currentUser) return '/login';
+    return isAdmin() ? '/admin/dashboard' : '/dashboard';
+  };
+
   const value = {
     currentUser,
     login,
     logout: logoutUser,
     isAuthenticated: !!currentUser,
+    isAdmin,
+    isRegularUser,
+    getUserHomeRoute,
   };
 
   return (

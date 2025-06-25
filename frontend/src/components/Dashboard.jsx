@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaEllipsisV } from 'react-icons/fa';
 
 const Dashboard = () => {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, isRegularUser, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef();
@@ -24,6 +24,19 @@ const Dashboard = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+  
+  // Redirect admin or non-regular users to the appropriate dashboard
+  useEffect(() => {
+    if (currentUser && !isRegularUser()) {
+      // If user is an admin, redirect to admin dashboard
+      if (isAdmin()) {
+        navigate('/admin/dashboard');
+      } else {
+        // For any other non-regular user role that might exist
+        navigate('/');
+      }
+    }
+  }, [currentUser, isRegularUser, isAdmin, navigate]);
 
   if (!currentUser) {
     return (
@@ -35,6 +48,24 @@ const Dashboard = () => {
             className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
           >
             Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
+  // Don't render the dashboard for non-regular users
+  if (!isRegularUser()) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+          <p className="mb-4">You don't have permission to access the user dashboard.</p>
+          <button 
+            onClick={() => navigate('/')} 
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
+          >
+            Go to Home
           </button>
         </div>
       </div>

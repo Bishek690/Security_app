@@ -1,10 +1,30 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { FaShieldAlt, FaLock, FaUserShield } from 'react-icons/fa';
 
 const Home = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, isAuthenticated, isAdmin, isRegularUser, getUserHomeRoute } = useAuth();
+  const navigate = useNavigate();
+  
+  // Redirect users based on their role
+  useEffect(() => {
+    if (isAuthenticated) {
+      // If user is an admin, redirect them to admin dashboard
+      if (isAdmin()) {
+        navigate('/admin/dashboard', { replace: true });
+      }
+      // If user is not a regular user but still authenticated (other roles)
+      else if (!isRegularUser()) {
+        // Redirect to another appropriate page or show access denied
+        navigate('/access-denied', { replace: true });
+      }
+      // If user is a regular user
+      else {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [isAuthenticated, isAdmin, isRegularUser, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col items-center bg-gradient-to-br from-blue-100 via-white to-green-100 px-4 py-12 text-center">
