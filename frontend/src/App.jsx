@@ -21,8 +21,7 @@ import AdminLayout from './admin/layout/AdminLayout';
 import AdminDashboard from './admin/AdminDashboard';
 import UserManagement from './admin/pages/UserManagement';
 import AdminProfile from './admin/pages/AdminProfile';
-import AdminSettings from './admin/pages/AdminSettings';
-
+import SecurityMetrics from './admin/pages/SecurityMetrics';
 function App() {
   return (
     <AuthProvider>
@@ -65,8 +64,8 @@ function App() {
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/users" element={<UserManagement />} />
+            <Route path="/admin/security" element={<SecurityMetrics />} />
             <Route path="/admin/profile" element={<AdminProfile />} />
-            <Route path="/admin/settings" element={<AdminSettings />} />
           </Route>
 
           {/* Default redirect */}

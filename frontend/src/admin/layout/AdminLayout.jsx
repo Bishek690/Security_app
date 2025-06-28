@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { FaUsers, FaUserShield, FaSignOutAlt, FaUserEdit, FaHome, FaBars, FaTimes, FaTachometerAlt, FaCog } from 'react-icons/fa';
+import { FaUsers, FaUserShield, FaSignOutAlt, FaUserEdit, FaBars, FaTimes, 
+         FaTachometerAlt, FaCog, FaChevronLeft, FaChevronRight,
+         FaShieldAlt, FaClipboardList, FaChartBar, FaUserPlus, 
+         FaExclamationTriangle, FaList } from 'react-icons/fa';
+import { MdSecurity } from 'react-icons/md';
 import { useAuth } from '../../context/AuthContext';
+import { getAdminStats } from '../../services/adminService';
 
 // Sidebar link component
 const SidebarLink = ({ icon, text, path, onClick, active = false }) => {
@@ -28,6 +33,12 @@ const AdminLayout = () => {
   const location = useLocation();
   const { currentUser, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [quickStats, setQuickStats] = useState({
+    totalUsers: 0,
+    newUsers: 0,
+    securityAlerts: 0
+  });
+  const [loading, setLoading] = useState(true);
   
   // Close sidebar on mobile when route changes
   useEffect(() => {
@@ -36,10 +47,39 @@ const AdminLayout = () => {
     }
   }, [location.pathname]);
   
-  // Set sidebar default state based on screen size
+  // Fetch quick stats for sidebar
   useEffect(() => {
+    const fetchQuickStats = async () => {
+      try {
+        const stats = await getAdminStats('1d');
+        setQuickStats({
+          totalUsers: stats.totalUsers || 0,
+          newUsers: stats.newRegistrations || 0,
+          securityAlerts: stats.failedLogins || 0
+        });
+      } catch (error) {
+        console.error('Failed to fetch quick stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchQuickStats();
+  }, []);
+  
+  // Set sidebar default state based on screen size and saved preference
+  useEffect(() => {
+    // Try to get user preference from localStorage
+    const savedSidebarState = localStorage.getItem('adminSidebarOpen');
+    
     const handleResize = () => {
-      setSidebarOpen(window.innerWidth >= 1024);
+      // On small screens, always close sidebar
+      if (window.innerWidth < 1024) {
+        setSidebarOpen(false);
+      } else {
+        // On large screens, use saved preference if available, otherwise open by default
+        setSidebarOpen(savedSidebarState !== null ? savedSidebarState === 'true' : true);
+      }
     };
     
     // Set initial state
@@ -51,6 +91,13 @@ const AdminLayout = () => {
     // Remove event listener on cleanup
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+  
+  // Save sidebar state to localStorage when it changes (only on desktop)
+  useEffect(() => {
+    if (window.innerWidth >= 1024) {
+      localStorage.setItem('adminSidebarOpen', sidebarOpen);
+    }
+  }, [sidebarOpen]);
   
   // Use real admin info if available
   const admin = currentUser || {
@@ -77,6 +124,17 @@ const AdminLayout = () => {
           {sidebarOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
         </button>
       </div>
+      
+      {/* Desktop sidebar toggle button */}
+      <div className={`hidden lg:block fixed ${sidebarOpen ? 'left-64' : 'left-0'} top-4 z-30 transition-all duration-300`}>
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="p-2 rounded-full bg-gray-800 text-white hover:bg-gray-700 shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+        >
+          {sidebarOpen ? <FaChevronLeft size={16} /> : <FaChevronRight size={16} />}
+        </button>
+      </div>
 
       {/* Backdrop overlay */}
       {sidebarOpen && (
@@ -91,26 +149,65 @@ const AdminLayout = () => {
       <div
         className={`bg-gray-800 text-white w-64 space-y-6 py-7 px-2 fixed inset-y-0 left-0 transform ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 transition duration-200 ease-in-out z-30 overflow-y-auto`}
+        } transition duration-300 ease-in-out z-30 overflow-y-auto`}
       >
         <div className="flex items-center justify-between px-4">
           <div className="flex items-center space-x-2">
             <FaUserShield className="h-8 w-8 text-blue-400" />
             <span className="text-2xl font-bold">Admin Panel</span>
           </div>
-          <button 
-            onClick={() => setSidebarOpen(false)} 
-            className="lg:hidden p-1 rounded-full hover:bg-gray-700 focus:outline-none"
-            aria-label="Close sidebar"
-          >
-            <FaTimes />
-          </button>
+          <div className="flex space-x-1">
+            <button 
+              onClick={() => setSidebarOpen(false)} 
+              className="lg:hidden p-1 rounded-full hover:bg-gray-700 focus:outline-none"
+              aria-label="Close sidebar"
+            >
+              <FaTimes />
+            </button>
+            <span className="hidden lg:flex text-xs text-gray-400 items-center">
+              <FaChevronLeft size={10} className="mr-1" /> 
+            </span>
+          </div>
         </div>
 
         {/* Admin info */}
         <div className="px-4 py-3 bg-gray-700 rounded-lg mx-2">
           <p className="text-white font-semibold">{admin.username}</p>
           <p className="text-gray-400 text-xs">{admin.email}</p>
+        </div>
+        
+        {/* Quick Stats */}
+        <div className="px-4 py-3 bg-gray-700 rounded-lg mx-2">
+          <h3 className="text-sm font-medium text-gray-300 mb-2">Quick Stats</h3>
+          {loading ? (
+            <div className="flex justify-center py-2">
+              <div className="h-4 w-4 border-2 border-t-blue-500 border-r-transparent border-b-blue-500 border-l-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <FaUsers className="text-blue-400 mr-2" />
+                  <span className="text-xs text-gray-300">Total Users</span>
+                </div>
+                <span className="text-sm font-bold text-white">{quickStats.totalUsers}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <FaUserPlus className="text-green-400 mr-2" />
+                  <span className="text-xs text-gray-300">New Users (24h)</span>
+                </div>
+                <span className="text-sm font-bold text-white">{quickStats.newUsers}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <FaExclamationTriangle className="text-amber-400 mr-2" />
+                  <span className="text-xs text-gray-300">Security Alerts</span>
+                </div>
+                <span className="text-sm font-bold text-white">{quickStats.securityAlerts}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Navigation Links */}
@@ -134,11 +231,11 @@ const AdminLayout = () => {
             }}
           />
           <SidebarLink
-            icon={<FaCog />}
-            text="Settings"
-            path="/admin/settings"
+            icon={<MdSecurity />}
+            text="Security Metrics"
+            path="/admin/security"
             onClick={() => {
-              navigate('/admin/settings');
+              navigate('/admin/security');
               if (window.innerWidth < 1024) setSidebarOpen(false);
             }}
           />
@@ -164,12 +261,11 @@ const AdminLayout = () => {
 
       {/* Main content */}
       <div 
-        className={`flex-1 overflow-y-auto h-screen transition-margin duration-200 ease-in-out
+        className={`flex-1 overflow-y-auto h-screen transition-all duration-300 ease-in-out 
           ${sidebarOpen ? 'lg:ml-64' : 'ml-0'}`}
-
       >
-        {/* Top mobile navbar spacer */}
-        <div className="h-16 lg:hidden"></div>
+        {/* Top navbar spacer - taller for mobile, shorter for desktop with toggle button */}
+        <div className={`h-16 ${sidebarOpen ? 'lg:h-16' : 'lg:h-16'}`}></div>
         
         {/* Content area */}
         <div className="p-6">

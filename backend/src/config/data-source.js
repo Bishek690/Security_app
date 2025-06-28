@@ -2,8 +2,9 @@ require("dotenv").config();
 const { DataSource } = require("typeorm");
 const { User } = require("../entities/User");
 const { OTP } = require("../entities/otp");
+const { ActivityLog } = require("../entities/ActivityLog");
 
-const entities = [User, OTP];
+const entities = [User, OTP, ActivityLog];
 
 
 const AppDataSource = new DataSource({
@@ -13,7 +14,7 @@ const AppDataSource = new DataSource({
   username: process.env.DB_USER,
   password: process.env.DB_PASS || "",
   database: process.env.DB_NAME,
-  synchronize: false,
+  synchronize: true,
   logging: false,
   entities: entities,
 });

@@ -5,6 +5,7 @@ const nodemailer = require("nodemailer");
 const { validateRegistrationInput } = require("../validations/userValidation");
 const jwt = require("jsonwebtoken");
 const axios = require("axios");
+const { logActivity } = require("../utils/activityLogger");
 
 const verifyCaptcha = async (captchaToken) => {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY;
@@ -119,6 +120,15 @@ const registerUser = async (req, res) => {
       }
     });
 
+    // Log the successful registration activity
+    await logActivity({
+      action: "New user registered",
+      userId: newUser.id,
+      userEmail: newUser.email,
+      details: `User ${username} registered successfully`,
+      status: "normal"
+    });
+    
     res.status(201).json({ message: "User registered successfully", strength });
   } catch (error) {
     res.status(500).json({ message: "Internal server error", error });
@@ -161,6 +171,15 @@ const loginUser = async (req, res) => {
       httpOnly: true,
       secure: true,
       expires: new Date(Date.now() + 86400000),
+    });
+    
+    // Log the successful login activity
+    await logActivity({
+      action: "User login",
+      userId: user.id,
+      userEmail: user.email,
+      details: "User logged in successfully",
+      status: "success"
     });
 
     res.status(200).json({ message: "Login successful", user: safeUser, token });

@@ -153,7 +153,7 @@ const AdminProfile = () => {
                         <input 
                           type="text" 
                           className="w-full p-2 border border-gray-300 rounded-md bg-gray-50" 
-                          value={admin.role}
+                          value={admin.isAdmin}
                           readOnly
                         />
                       </div>
