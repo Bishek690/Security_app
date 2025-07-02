@@ -45,9 +45,10 @@ const isAdmin = async (req, res, next) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Check if user has admin role
-    if (user.isAdmin !== 'admin') {
-      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    // Check if user has elevated role (admin, supervisor, or manager)
+    const elevatedRoles = ['admin', 'supervisor', 'manager'];
+    if (!elevatedRoles.includes(user.isAdmin)) {
+      return res.status(403).json({ message: "Access denied. Administrative privileges required." });
     }
 
     next();

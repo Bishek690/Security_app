@@ -30,29 +30,47 @@ export function AuthProvider({ children }) {
     setCurrentUser(null);
   };
 
-  // Check if user is admin
+  // Check if user has elevated privileges (admin, supervisor, manager)
   const isAdmin = () => {
     if (!currentUser) return false;
+    const elevatedRoles = ['admin', 'supervisor', 'manager'];
     return (
       currentUser.isAdmin === true ||
-      currentUser.isAdmin === 'admin' ||
-      currentUser.role === 'admin' ||
+      elevatedRoles.includes(currentUser.isAdmin) ||
+      elevatedRoles.includes(currentUser.role) ||
       currentUser.role === 'Administrator'
     );
   };
 
-  // Check if user is a regular user (not an admin)
+  // Check if user is a regular user (not elevated)
   const isRegularUser = () => {
     if (!currentUser) return false;
     return (
       currentUser.isAdmin === false ||
       currentUser.isAdmin === 'user' ||
       currentUser.role === 'user' ||
-      (currentUser.isAdmin !== true &&
-       currentUser.isAdmin !== 'admin' &&
-       currentUser.role !== 'admin' &&
-       currentUser.role !== 'Administrator')
+      (!isAdmin())
     );
+  };
+
+  // Get user role
+  const getUserRole = () => {
+    if (!currentUser) return 'guest';
+    return currentUser.isAdmin || currentUser.role || 'user';
+  };
+
+  // Check if user has specific role
+  const hasRole = (role) => {
+    if (!currentUser) return false;
+    const userRole = getUserRole();
+    return userRole === role;
+  };
+
+  // Check if user can manage other users (admin and supervisor only)
+  const canManageUsers = () => {
+    if (!currentUser) return false;
+    const userRole = getUserRole();
+    return ['admin', 'supervisor'].includes(userRole);
   };
 
   // Get user's home page route
@@ -69,6 +87,9 @@ export function AuthProvider({ children }) {
     isAdmin,
     isRegularUser,
     getUserHomeRoute,
+    getUserRole,
+    hasRole,
+    canManageUsers,
   };
 
   return (

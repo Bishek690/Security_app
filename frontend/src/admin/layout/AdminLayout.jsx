@@ -46,25 +46,35 @@ const AdminLayout = () => {
       setSidebarOpen(false);
     }
   }, [location.pathname]);
-  
-  // Fetch quick stats for sidebar
+    // Fetch quick stats for sidebar
   useEffect(() => {
     const fetchQuickStats = async () => {
       try {
+        console.log('Fetching quick stats for sidebar...');
         const stats = await getAdminStats('1d');
-        setQuickStats({
+        console.log('Received stats for sidebar:', stats);
+        
+        const newQuickStats = {
           totalUsers: stats.totalUsers || 0,
           newUsers: stats.newRegistrations || 0,
           securityAlerts: stats.failedLogins || 0
-        });
+        };
+        
+        console.log('Setting quick stats:', newQuickStats);
+        setQuickStats(newQuickStats);
       } catch (error) {
         console.error('Failed to fetch quick stats:', error);
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchQuickStats();
+    
+    // Set up interval to refresh stats every 30 seconds
+    const interval = setInterval(fetchQuickStats, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
   
   // Set sidebar default state based on screen size and saved preference
@@ -100,11 +110,7 @@ const AdminLayout = () => {
   }, [sidebarOpen]);
   
   // Use real admin info if available
-  const admin = currentUser || {
-    username: 'admin',
-    email: 'admin@example.com',
-    role: 'Administrator',
-  };
+  const admin = currentUser;
   const handleLogout = () => {
     if (logout) {
       logout();
@@ -151,22 +157,10 @@ const AdminLayout = () => {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } transition duration-300 ease-in-out z-30 overflow-y-auto`}
       >
-        <div className="flex items-center justify-between px-4">
+        <div className="flex items-center justify-between px-4 mt-4">
           <div className="flex items-center space-x-2">
             <FaUserShield className="h-8 w-8 text-blue-400" />
             <span className="text-2xl font-bold">Admin Panel</span>
-          </div>
-          <div className="flex space-x-1">
-            <button 
-              onClick={() => setSidebarOpen(false)} 
-              className="lg:hidden p-1 rounded-full hover:bg-gray-700 focus:outline-none"
-              aria-label="Close sidebar"
-            >
-              <FaTimes />
-            </button>
-            <span className="hidden lg:flex text-xs text-gray-400 items-center">
-              <FaChevronLeft size={10} className="mr-1" /> 
-            </span>
           </div>
         </div>
 
@@ -178,7 +172,38 @@ const AdminLayout = () => {
         
         {/* Quick Stats */}
         <div className="px-4 py-3 bg-gray-700 rounded-lg mx-2">
-          <h3 className="text-sm font-medium text-gray-300 mb-2">Quick Stats</h3>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-sm font-medium text-gray-300">Quick Stats</h3>
+            <button
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  console.log('Manually refreshing quick stats...');
+                  const stats = await getAdminStats('1d');
+                  console.log('Manual refresh - received stats:', stats);
+                  const newQuickStats = {
+                    totalUsers: stats.totalUsers || 0,
+                    newUsers: stats.newRegistrations || 0,
+                    securityAlerts: stats.failedLogins || 0
+                  };
+                  console.log('Manual refresh - setting quick stats:', newQuickStats);
+                  setQuickStats(newQuickStats);
+                } catch (error) {
+                  console.error('Manual refresh failed:', error);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              className="text-xs text-blue-400 hover:text-blue-300 focus:outline-none"
+              title="Refresh stats"
+            >
+              ⟳
+            </button>
+          </div>
+          {/* Debug info */}
+          <div className="text-xs text-gray-500 mb-2">
+            Last updated: {new Date().toLocaleTimeString()} | Loading: {loading ? 'Yes' : 'No'}
+          </div>
           {loading ? (
             <div className="flex justify-center py-2">
               <div className="h-4 w-4 border-2 border-t-blue-500 border-r-transparent border-b-blue-500 border-l-transparent rounded-full animate-spin"></div>
@@ -240,8 +265,17 @@ const AdminLayout = () => {
             }}
           />
           <SidebarLink
+            icon={<FaList />}
+            text="Audit Logs"
+            path="/admin/audit"
+            onClick={() => {
+              navigate('/admin/audit');
+              if (window.innerWidth < 1024) setSidebarOpen(false);
+            }}
+          />
+          <SidebarLink
             icon={<FaUserEdit />}
-            text="Edit Profile"
+            text="Admin Profile"
             path="/admin/profile"
             onClick={() => {
               navigate('/admin/profile');

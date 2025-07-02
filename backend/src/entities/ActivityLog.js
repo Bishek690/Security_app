@@ -15,7 +15,7 @@ const ActivityLog = new EntitySchema({
       nullable: false
     },
     userId: {
-      type: "int",
+      type: "uuid",
       nullable: true
     },
     userEmail: {

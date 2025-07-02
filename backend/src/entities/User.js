@@ -24,7 +24,7 @@ module.exports = {
       },
       isAdmin: {
         type: "enum",
-        enum: ["user", "admin"], 
+        enum: ["user", "manager", "supervisor", "admin"], 
         default: "user",
       },
     },

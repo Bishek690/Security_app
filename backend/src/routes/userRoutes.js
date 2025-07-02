@@ -23,7 +23,7 @@ router.post("/user/register", registerUser);
 router.post("/user/login", loginUser);
 router.post("/user/forgot-password", forgotPassword);
 router.post("/user/reset-password", resetPassword);
-router.post("/user/logout", logoutUser);
+router.post("/user/logout", isAuthenticated, logoutUser);
 
 // Protected routes
 router.get("/user", isAuthenticated, getUserData);

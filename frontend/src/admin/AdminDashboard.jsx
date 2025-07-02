@@ -19,8 +19,8 @@ const AdminDashboard = () => {
   const [basicStats, setBasicStats] = useState({
     totalUsers: 0,
     activeAdmins: 0,
+    adminUsers: 0,
     newRegistrations: 0,
-    pendingRequests: 0,
     failedLogins: 0,
     recentActivity: []
   });
@@ -66,10 +66,16 @@ const AdminDashboard = () => {
             bgColor: 'bg-blue-100' 
           },
           { 
-            label: 'Active Admins', 
+            label: 'Staff Members', 
             value: statsData.activeAdmins, 
             icon: <FaUserShield className="text-green-600 text-3xl" />, 
             bgColor: 'bg-green-100' 
+          },
+          { 
+            label: 'Admins', 
+            value: statsData.adminUsers, 
+            icon: <FaUserShield className="text-red-600 text-3xl" />, 
+            bgColor: 'bg-red-100' 
           },
           { 
             label: 'New Registrations', 
@@ -78,16 +84,10 @@ const AdminDashboard = () => {
             bgColor: 'bg-purple-100' 
           },
           { 
-            label: 'Pending Requests', 
-            value: statsData.pendingRequests, 
-            icon: <MdNotifications className="text-amber-600 text-3xl" />, 
-            bgColor: 'bg-amber-100' 
-          },
-          { 
             label: 'Failed Logins', 
             value: statsData.failedLogins, 
-            icon: <FaTimesCircle className="text-red-600 text-3xl" />, 
-            bgColor: 'bg-red-100' 
+            icon: <FaTimesCircle className="text-orange-600 text-3xl" />, 
+            bgColor: 'bg-orange-100' 
           },
         ];
           setStats(formattedStats);
@@ -113,11 +113,7 @@ const AdminDashboard = () => {
   };
 
   // Use real admin info if available
-  const admin = currentUser || {
-    username: 'admin',
-    email: 'admin@example.com',
-    role: 'Administrator',
-  };
+  const admin = currentUser;
 
   return (
     <div className="flex flex-col">
@@ -153,16 +149,18 @@ const AdminDashboard = () => {
       </div>
       
       <div className="p-6">
-        <div className="mb-6 flex justify-between items-end">
+        <div className="mb-6 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
           <div>
             <h2 className="text-xl font-semibold text-gray-700 mb-2">Welcome, {admin.username}!</h2>
-            <p className="text-gray-500">Here's what's happening in your system.</p>
+            <p className="text-gray-500">Here's what's happening in your system for the last {timeRange === '1d' ? '24 hours' : timeRange === '7d' ? '7 days' : timeRange === '30d' ? '30 days' : '90 days'}.</p>
           </div>
-          {lastUpdated && (
-            <p className="text-sm text-gray-500">
-              Last updated: {lastUpdated.toLocaleTimeString()}
-            </p>
-          )}
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3">
+            {lastUpdated && (
+              <p className="text-sm text-gray-500">
+                Last updated: {lastUpdated.toLocaleTimeString()}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Stats Cards */}

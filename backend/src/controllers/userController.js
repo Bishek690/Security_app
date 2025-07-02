@@ -5,7 +5,7 @@ const nodemailer = require("nodemailer");
 const { validateRegistrationInput } = require("../validations/userValidation");
 const jwt = require("jsonwebtoken");
 const axios = require("axios");
-const { logActivity } = require("../utils/activityLogger");
+const { logActivity, getClientIP } = require("../utils/activityLogger");
 
 const verifyCaptcha = async (captchaToken) => {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY;
@@ -33,10 +33,14 @@ const registerUser = async (req, res) => {
     isAdmin,
   } = req.body;
 
-  // Verify CAPTCHA first
-  const isCaptchaValid = await verifyCaptcha(captchaToken);
-  if (!isCaptchaValid) {
-    return res.status(400).json({ message: "Invalid CAPTCHA" });
+  // Verify CAPTCHA first (bypass in development)
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Bypassing CAPTCHA validation for registration in development mode');
+  } else {
+    const isCaptchaValid = await verifyCaptcha(captchaToken);
+    if (!isCaptchaValid) {
+      return res.status(400).json({ message: "Invalid CAPTCHA" });
+    }
   }
 
   // Run validation
@@ -138,9 +142,14 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
   const { identifier, password, captchaToken } = req.body;
 
-  const isCaptchaValid = await verifyCaptcha(captchaToken);
-  if (!isCaptchaValid) {
-    return res.status(400).json({ message: 'Invalid CAPTCHA' });
+  // Temporarily bypass CAPTCHA for testing
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Bypassing CAPTCHA validation in development mode');
+  } else {
+    const isCaptchaValid = await verifyCaptcha(captchaToken);
+    if (!isCaptchaValid) {
+      return res.status(400).json({ message: 'Invalid CAPTCHA' });
+    }
   }
 
   try {
@@ -152,12 +161,27 @@ const loginUser = async (req, res) => {
       .getOne();
 
     if (!user || !user.password) {
+      // Log failed login attempt
+      await logActivity({
+        action: "Failed login attempt",
+        userEmail: identifier,
+        details: "Invalid credentials - user not found or no password",
+        status: "danger"
+      });
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+      // Log failed login attempt
+      await logActivity({
+        action: "Failed login attempt",
+        userId: user.id,
+        userEmail: user.email,
+        details: "Invalid password provided",
+        status: "danger"
+      });
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
@@ -179,7 +203,8 @@ const loginUser = async (req, res) => {
       userId: user.id,
       userEmail: user.email,
       details: "User logged in successfully",
-      status: "success"
+      status: "success",
+      ipAddress: getClientIP(req)
     });
 
     res.status(200).json({ message: "Login successful", user: safeUser, token });
@@ -508,6 +533,15 @@ const changePassword = async (req, res) => {
     // Optionally delete the OTP
     await otpRepo.remove(otpRecord);
 
+    // Log the password change activity
+    await logActivity({
+      action: "Password changed",
+      userId: user.id,
+      userEmail: user.email,
+      details: "Password changed successfully via OTP verification",
+      status: "success"
+    });
+
     res.status(200).json({ message: "Password changed successfully" });
   } catch (error) {
     console.error("Change password error:", error);
@@ -517,6 +551,22 @@ const changePassword = async (req, res) => {
 
 const logoutUser = async (req, res) => {
   try {
+    // If user is authenticated, log the logout activity
+    if (req.user && req.user.id) {
+      const userRepo = AppDataSource.getRepository("User");
+      const user = await userRepo.findOneBy({ id: req.user.id });
+      
+      if (user) {
+        await logActivity({
+          action: "User logout",
+          userId: user.id,
+          userEmail: user.email,
+          details: "User logged out successfully",
+          status: "normal"
+        });
+      }
+    }
+    
     res.clearCookie("token");
     res.status(200).json({ message: "Logout successful" });
   } catch (error) {

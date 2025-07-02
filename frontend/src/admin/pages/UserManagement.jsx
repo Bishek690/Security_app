@@ -18,6 +18,7 @@ const UserManagement = () => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
+    phoneNumber: '',
     password: '',
     role: 'user',
     status: 'active'
@@ -58,6 +59,7 @@ const UserManagement = () => {
       setFormData({
         username: selectedUser.username || '',
         email: selectedUser.email || '',
+        phoneNumber: selectedUser.phoneNumber || '',
         password: '',  // Don't populate password for edit
         role: selectedUser.role || 'user',
         status: selectedUser.status || 'active'
@@ -66,6 +68,7 @@ const UserManagement = () => {
       setFormData({
         username: '',
         email: '',
+        phoneNumber: '',
         password: '',
         role: 'user',
         status: 'active'
@@ -231,6 +234,7 @@ const UserManagement = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
@@ -240,7 +244,7 @@ const UserManagement = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {loading ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center">
+                    <td colSpan="6" className="px-6 py-4 text-center">
                       <div className="flex justify-center">
                         <FaSpinner className="animate-spin text-blue-600 text-2xl" />
                       </div>
@@ -253,7 +257,7 @@ const UserManagement = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600">
-                            {user.username.charAt(0).toUpperCase()}
+                            {user.username?.charAt(0)?.toUpperCase() || 'U'}
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900">{user.username}</div>
@@ -262,9 +266,13 @@ const UserManagement = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{user.phoneNumber || 'N/A'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                           user.role === 'admin' ? 'bg-red-100 text-red-800' : 
-                          user.role === 'manager' ? 'bg-blue-100 text-blue-800' : 
+                          user.role === 'manager' ? 'bg-yellow-100 text-yellow-800' :
+                          user.role === 'supervisor' ? 'bg-purple-100 text-purple-800' :
                           'bg-green-100 text-green-800'
                         }`}>
                           {user.role}
@@ -298,7 +306,7 @@ const UserManagement = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
+                    <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
                       No users found matching your search.
                     </td>
                   </tr>                )}
@@ -412,6 +420,18 @@ const UserManagement = () => {
                   </div>
                   
                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                    <input 
+                      type="tel" 
+                      name="phoneNumber"
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      placeholder="Enter phone number" 
+                      value={formData.phoneNumber}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Password {actionType === 'edit' && <span className="text-gray-500 text-xs">(Leave blank to keep current)</span>}
                     </label>
@@ -438,6 +458,7 @@ const UserManagement = () => {
                     >
                       <option value="user">User</option>
                       <option value="manager">Manager</option>
+                      <option value="supervisor">Supervisor</option>
                       <option value="admin">Admin</option>
                     </select>
                   </div>

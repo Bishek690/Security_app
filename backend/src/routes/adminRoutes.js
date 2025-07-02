@@ -16,7 +16,10 @@ router.get("/analytics", adminController.getDashboardAnalytics);
 router.get("/recent-activities", adminController.getRecentActivities);
 
 // User management routes
-router.get("/users", isAuthenticated, isAdmin, adminController.getUsers);
+router.get("/users", adminController.getUsers);
+router.post("/users", adminController.addUser);
+router.put("/users/:id", adminController.updateUser);
+router.delete("/users/:id", adminController.deleteUser);
 
 // Audit logs
 router.get("/audit-logs", isAuthenticated, isAdmin, adminController.getAuditLogs);

@@ -22,6 +22,7 @@ import AdminDashboard from './admin/AdminDashboard';
 import UserManagement from './admin/pages/UserManagement';
 import AdminProfile from './admin/pages/AdminProfile';
 import SecurityMetrics from './admin/pages/SecurityMetrics';
+import AuditLogs from './admin/pages/AuditLogs';
 function App() {
   return (
     <AuthProvider>
@@ -65,6 +66,7 @@ function App() {
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/users" element={<UserManagement />} />
             <Route path="/admin/security" element={<SecurityMetrics />} />
+            <Route path="/admin/audit" element={<AuditLogs />} />
             <Route path="/admin/profile" element={<AdminProfile />} />
           </Route>
 
