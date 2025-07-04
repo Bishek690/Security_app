@@ -69,7 +69,7 @@ const Login = () => {
       const userData = await login({ ...formData, captchaToken });
       authLogin(userData);
 
-      if (userData?.user.isAdmin == 'admin') {
+      if (userData?.user.isAdmin == 'admin' || userData?.user.isAdmin == 'supervisor' || userData?.user.isAdmin == 'manager') {
         navigate("/admin/dashboard");
       } else {
         navigate("/");

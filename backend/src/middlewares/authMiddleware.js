@@ -3,12 +3,12 @@ const { User } = require("../entities/User");
 const { AppDataSource } = require("../config/data-source");
 
 const isAuthenticated = (req, res, next) => {
-  // For development, check if we should bypass authentication
-  if (process.env.NODE_ENV === 'development' && process.env.BYPASS_AUTH === 'true') {
-    console.log('⚠️ WARNING: Authentication bypassed for development');
-    req.user = { id: 1, role: 'admin' }; // Mock user data
-    return next();
-  }
+  // // For development, check if we should bypass authentication
+  // if (process.env.NODE_ENV === 'development' && process.env.BYPASS_AUTH === 'true') {
+  //   console.log('⚠️ WARNING: Authentication bypassed for development');
+  //   req.user = { id: 1, role: 'admin' }; // Mock user data
+  //   return next();
+  // }
 
   const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
 
@@ -26,11 +26,11 @@ const isAuthenticated = (req, res, next) => {
 };
 
 const isAdmin = async (req, res, next) => {
-  // For development, check if we should bypass admin authorization
-  if (process.env.NODE_ENV === 'development' && process.env.BYPASS_AUTH === 'true') {
-    console.log('⚠️ WARNING: Admin authorization bypassed for development');
-    return next();
-  }
+  // // For development, check if we should bypass admin authorization
+  // if (process.env.NODE_ENV === 'development' && process.env.BYPASS_AUTH === 'true') {
+  //   console.log('⚠️ WARNING: Admin authorization bypassed for development');
+  //   return next();
+  // }
 
   try {
     // Check if user is authenticated first

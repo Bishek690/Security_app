@@ -19,7 +19,7 @@ router.get("/recent-activities", adminController.getRecentActivities);
 router.get("/users", adminController.getUsers);
 router.post("/users", adminController.addUser);
 router.put("/users/:id", adminController.updateUser);
-router.delete("/users/:id", adminController.deleteUser);
+router.delete("/users/:id", isAdmin, adminController.deleteUser);
 
 // Audit logs
 router.get("/audit-logs", isAuthenticated, isAdmin, adminController.getAuditLogs);

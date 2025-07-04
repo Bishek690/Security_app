@@ -25,9 +25,14 @@ export function AuthProvider({ children }) {
 
   // Logout user
   const logoutUser = () => {
-    logout();
+    try {
+    localStorage.removeItem('token');
     localStorage.removeItem('user');
     setCurrentUser(null);
+    } catch (error) {
+      console.error('Error logging out user:', error);
+      setCurrentUser(null);
+    }
   };
 
   // Check if user has elevated privileges (admin, supervisor, manager)

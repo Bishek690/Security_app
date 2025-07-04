@@ -142,15 +142,11 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
   const { identifier, password, captchaToken } = req.body;
 
-  // Temporarily bypass CAPTCHA for testing
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Bypassing CAPTCHA validation in development mode');
-  } else {
     const isCaptchaValid = await verifyCaptcha(captchaToken);
     if (!isCaptchaValid) {
       return res.status(400).json({ message: 'Invalid CAPTCHA' });
     }
-  }
+
 
   try {
     const userRepo = AppDataSource.getRepository("User");

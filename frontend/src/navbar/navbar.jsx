@@ -34,7 +34,7 @@ const Navbar = () => {
       ) : (
         <div className='flex gap-4'>
             <button
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/register')}
                 className="bg-blue-600 text-white px-5 py-2 rounded-md shadow-md hover:bg-blue-700 transition duration-300"
             >
                 Register

@@ -19,7 +19,7 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     } else {
       // For testing purposes, use a known working token
-      const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImIzMzNjYWE1LWI4YmEtNDM2NS1iOTAwLWRkNTg4ZmJlZjljNiIsImlhdCI6MTc1MTQ3NTE2MywiZXhwIjoxNzUxNTYxNTYzfQ.uCI-hEk9twVZDJk8ulJUeZlSMSJ2H55KN4XuDTA5zys';
+      const testToken = ''
       config.headers.Authorization = `Bearer ${testToken}`;
       console.warn('Using test token for admin API calls');
     }
@@ -32,10 +32,7 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Log the error for debugging
-    console.warn('API Error:', error.message);
-    
-    // Check if the error is due to backend server not running
+
     if (!error.response) {
       console.warn('Backend server might be down or not available');
     }
@@ -255,15 +252,8 @@ const generateMockAuditLogs = (page = 1, limit = 20, search = '', action = '') =
   ];
   
   const actionTypes = [
-    { type: 'User login', details: 'User logged in successfully' },
-    { type: 'User logout', details: 'User logged out' },
-    { type: 'New user registered', details: 'User created a new account' },
-    { type: 'Profile updated', details: 'User profile was updated' },
-    { type: 'User deleted', details: 'User account was deleted' },
-    { type: 'Password reset', details: 'Password reset requested' },
-    { type: 'Failed login attempt', details: 'Failed login attempt' },
-    { type: 'Role changed', details: 'User role was modified' }
-  ];
+    
+  ] ;
   
   const ipAddresses = [
     '192.168.1.' + Math.floor(Math.random() * 255),
@@ -460,56 +450,9 @@ export const getRecentActivities = async (limit = 5) => {
 
 // Helper function to generate mock activity data
 const generateMockActivities = (limit = 5) => {
-  const activities = [
-    {
-      id: 1,
-      action: "New user registered",
-      user: "john.doe@example.com",
-      time: "2 hours ago",
-      status: "normal",
-      details: "User registration completed successfully"
-    },
-    {
-      id: 2,
-      action: "User upgraded to Premium",
-      user: "sarah.smith@example.com",
-      time: "3 hours ago",
-      status: "success",
-      details: "Subscription plan changed"
-    },
-    {
-      id: 3,
-      action: "Failed login attempt",
-      user: "unknown@example.com",
-      time: "5 hours ago",
-      status: "danger",
-      details: "Multiple failed attempts detected"
-    },
-    {
-      id: 4,
-      action: "Password changed",
-      user: "mike.brown@example.com",
-      time: "8 hours ago",
-      status: "normal",
-      details: "Password reset via email"
-    },
-    {
-      id: 5,
-      action: "Security alert",
-      user: "system",
-      time: "1 day ago",
-      status: "warning",
-      details: "Unusual login location detected"
-    },
-    {
-      id: 6,
-      action: "System backup",
-      user: "system",
-      time: "2 days ago",
-      status: "success",
-      details: "Weekly backup completed successfully"
-    }
-  ];
+  const activities = Array.from({ length: limit }, (_, i) => ({
+    
+  }));
   
   // Return only the requested number of activities
   return activities.slice(0, limit);

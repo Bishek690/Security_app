@@ -518,20 +518,9 @@ exports.getUsers = async (req, res) => {
       console.warn('Database query error for users, using mock data:', dbError.message);
       
       // Fallback to mock users if database query fails
-      const mockUsers = [
-        { id: 1, username: 'john_doe', email: 'john@example.com', role: 'user', lastActive: '2 days ago', status: 'active' },
-        { id: 2, username: 'alice_smith', email: 'alice@example.com', role: 'admin', lastActive: '1 hour ago', status: 'active' },
-        { id: 3, username: 'bob_jones', email: 'bob@example.com', role: 'user', lastActive: '3 hours ago', status: 'active' },
-        { id: 4, username: 'emma_wilson', email: 'emma@example.com', role: 'user', lastActive: '5 days ago', status: 'inactive' },
-        { id: 5, username: 'mike_brown', email: 'mike@example.com', role: 'user', lastActive: '1 day ago', status: 'active' },
-        { id: 6, username: 'sarah_johnson', email: 'sarah@example.com', role: 'user', lastActive: '4 hours ago', status: 'active' },
-        { id: 7, username: 'david_miller', email: 'david@example.com', role: 'user', lastActive: '1 week ago', status: 'inactive' },
-        { id: 8, username: 'lisa_taylor', email: 'lisa@example.com', role: 'user', lastActive: '3 days ago', status: 'active' },
-        { id: 9, username: 'james_wilson', email: 'james@example.com', role: 'user', lastActive: '6 hours ago', status: 'active' },
-        { id: 10, username: 'emily_clark', email: 'emily@example.com', role: 'user', lastActive: '2 days ago', status: 'active' },
-        { id: 11, username: 'alex_rodriguez', email: 'alex@example.com', role: 'user', lastActive: '1 day ago', status: 'inactive' },
-        { id: 12, username: 'olivia_martinez', email: 'olivia@example.com', role: 'user', lastActive: '5 hours ago', status: 'active' }
-      ];
+      const mockUsers = Array.from({ length: limit }, (_, idx) => ({
+        
+      }));
       
       // Filter by search term if provided
       let filteredUsers = mockUsers;
